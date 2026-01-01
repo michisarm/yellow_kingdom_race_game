@@ -192,6 +192,10 @@
                 💥 보스 체력: <span id="bossHp">10</span>/<span id="bossMaxHp">10</span>
             </div>
         </div>
+        <div id="mobileControls">
+            <div class="control-btn" id="btnJump">🦘</div>
+            <div class="control-btn" id="btnShoot">🥚</div>
+        </div>
         <div id="gameOver" style="display: none;">
             <h1>💔 게임 오버!</h1>
             <p style="margin: 15px 0;">최종 점수: <span id="gameOverScore"></span></p>
@@ -624,21 +628,37 @@
         }
 
         // 시작 화면 클릭 감지
-        document.getElementById('startCanvas')?.addEventListener('click', (e) => {
-            const canvas = e.target;
-            const rect = canvas.getBoundingClientRect();
-            // CSS 크기와 캔버스 내부 크기의 비율 계산
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
+        // 시작 화면 클릭 감지
+        const startCanvas = document.getElementById('startCanvas');
 
-            const x = (e.clientX - rect.left) * scaleX;
-            const y = (e.clientY - rect.top) * scaleY;
+        function handleStartInput(x, y, rectWidth, rectHeight) {
+            const canvas = document.getElementById('startCanvas');
+            // CSS 크기와 캔버스 내부 크기의 비율 계산
+            const scaleX = canvas.width / rectWidth;
+            const scaleY = canvas.height / rectHeight;
+
+            const scaledX = x * scaleX;
+            const scaledY = y * scaleY;
 
             // Start Race 버튼 영역
-            if (x >= 300 && x <= 600 && y >= 520 && y <= 580) {
+            if (scaledX >= 300 && scaledX <= 600 && scaledY >= 520 && scaledY <= 580) {
                 startGame();
             }
+        }
+
+        startCanvas?.addEventListener('click', (e) => {
+            const rect = e.target.getBoundingClientRect();
+            handleStartInput(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height);
         });
+
+        startCanvas?.addEventListener('touchstart', (e) => {
+            // 터치 이벤트 기본 동작 방지 (스크롤 등)
+            if (e.cancelable) e.preventDefault();
+
+            const rect = e.target.getBoundingClientRect();
+            const touch = e.touches[0];
+            handleStartInput(touch.clientX - rect.left, touch.clientY - rect.top, rect.width, rect.height);
+        }, { passive: false });
 
         let gameState = 'start';
         let score = 0;
