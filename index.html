@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>옐로우 왕국 레이싱</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
@@ -170,6 +172,8 @@
             #gameContainer {
                 width: 100vw;
                 height: 100vh;
+                overflow: hidden;
+                /* Prevent scrolling */
             }
 
             canvas {
@@ -178,98 +182,141 @@
                 object-fit: contain;
             }
         }
+
+        /* Landscape Mobile Optimization */
+        @media (max-height: 500px) {
+            #stage2Transition h1 {
+                font-size: 32px !important;
+                margin-bottom: 5px !important;
+            }
+
+            #stage2Transition h2 {
+                font-size: 24px !important;
+                margin-bottom: 10px !important;
+            }
+
+            #stage2Transition div[style*="background"] {
+                padding: 10px 20px !important;
+                margin-bottom: 10px !important;
+            }
+
+            #stage2Transition p {
+                font-size: 14px !important;
+                margin: 2px 0 !important;
+            }
+
+            #stage2StartBtn {
+                padding: 10px 30px !important;
+                font-size: 20px !important;
+            }
+
+            #ui {
+                top: 5px !important;
+                left: 10px !important;
+                transform: scale(0.8);
+                transform-origin: top left;
+            }
+
+            #mobileControls {
+                bottom: 10px !important;
+            }
+
+            .control-btn {
+                width: 60px !important;
+                height: 60px !important;
+                font-size: 24px !important;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas" width="900" height="650"></canvas>
-        <div id="ui">
-            <div>❤️ 체력: <span id="playerHp">3</span>/3</div>
-            <div>⭐ 점수: <span id="score">0</span></div>
-            <div style="color: #FFD93D; font-weight: 700;">🎮 Stage: <span id="stageDisplay">1</span></div>
-            <div id="bossHealth" style="display:none;">
-                💥 보스 체력: <span id="bossHp">10</span>/<span id="bossMaxHp">10</span>
-            </div>
+    <canvas id="gameCanvas" width="900" height="650"></canvas>
+    <div id="ui">
+        <div>❤️ 체력: <span id="playerHp">3</span>/3</div>
+        <div>⭐ 점수: <span id="score">0</span></div>
+        <div style="color: #FFD93D; font-weight: 700;">🎮 Stage: <span id="stageDisplay">1</span></div>
+        <div id="bossHealth" style="display:none;">
+            💥 보스 체력: <span id="bossHp">10</span>/<span id="bossMaxHp">10</span>
         </div>
-        <div id="mobileControls">
-            <div class="control-btn" id="btnJump">🦘</div>
-            <div class="control-btn" id="btnFullscreen" style="font-size: 24px;">⛶</div>
-            <div class="control-btn" id="btnShoot">🥚</div>
+    </div>
+    <div id="mobileControls">
+        <div class="control-btn" id="btnJump">🦘</div>
+        <div class="control-btn" id="btnShoot">🥚</div>
+    </div>
+    <div id="gameOver" style="display: none;">
+        <h1>💔 게임 오버!</h1>
+        <p style="margin: 15px 0;">최종 점수: <span id="gameOverScore"></span></p>
+        <div id="rankDisplay"
+            style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; margin: 20px 0;">
+            <h3 style="color: #FF6B9D; margin: 0 0 15px 0;">🏆 최고 기록 TOP 5 🏆</h3>
+            <div id="rankList" style="color: #2C3E50; font-size: 18px; text-align: left;"></div>
         </div>
-        <div id="gameOver" style="display: none;">
-            <h1>💔 게임 오버!</h1>
-            <p style="margin: 15px 0;">최종 점수: <span id="gameOverScore"></span></p>
-            <div id="rankDisplay"
-                style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; margin: 20px 0;">
-                <h3 style="color: #FF6B9D; margin: 0 0 15px 0;">🏆 최고 기록 TOP 5 🏆</h3>
-                <div id="rankList" style="color: #2C3E50; font-size: 18px; text-align: left;"></div>
-            </div>
-            <p style="font-size: 18px;">스페이스로 다시 시작하세요</p>
+        <p style="font-size: 18px;">스페이스로 다시 시작하세요</p>
+    </div>
+    <div id="victory" style="display: none;">
+        <h1>🎉 승리! 🎉</h1>
+        <p>병아리가 왕국을 구했어요!</p>
+        <p style="margin-top: 15px;">최종 점수: <span id="finalScore"></span></p>
+        <div id="victoryRankDisplay"
+            style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; margin: 20px 0;">
+            <h3 style="color: #FFD93D; margin: 0 0 15px 0;">🏆 최고 기록 TOP 5 🏆</h3>
+            <div id="victoryRankList" style="color: #2C3E50; font-size: 18px; text-align: left;"></div>
         </div>
-        <div id="victory" style="display: none;">
-            <h1>🎉 승리! 🎉</h1>
-            <p>병아리가 왕국을 구했어요!</p>
-            <p style="margin-top: 15px;">최종 점수: <span id="finalScore"></span></p>
-            <div id="victoryRankDisplay"
-                style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; margin: 20px 0;">
-                <h3 style="color: #FFD93D; margin: 0 0 15px 0;">🏆 최고 기록 TOP 5 🏆</h3>
-                <div id="victoryRankList" style="color: #2C3E50; font-size: 18px; text-align: left;"></div>
-            </div>
-            <button onclick="location.reload()">다시 하기</button>
-        </div>
-        <div id="startScreen"
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-            <canvas id="startCanvas" width="900" height="650" style="position: absolute; top: 0; left: 0;"></canvas>
-        </div>
-        <div id="stage2Transition"
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 25; display: none; flex-direction: column; align-items: center; justify-content: center;">
-            <div style="text-align: center; animation: fadeInScale 0.5s ease-out;">
-                <h1
-                    style="color: #F0E68C; font-size: 56px; margin: 0 0 15px 0; text-shadow: 0 0 20px #FFD700, 4px 4px 0 rgba(0,0,0,0.3); font-weight: 700;">
-                    🌙 Stage 2 🌙</h1>
-                <h2
-                    style="color: #87CEEB; font-size: 36px; margin: 0 0 30px 0; text-shadow: 0 0 15px #4FC3F7; font-weight: 700;">
-                    Moonlight Battle</h2>
+        <button onclick="location.reload()">다시 하기</button>
+    </div>
+    <div id="startScreen"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <canvas id="startCanvas" width="900" height="650" style="position: absolute; top: 0; left: 0;"></canvas>
+    </div>
+    <div id="stage2Transition"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 25; display: none; flex-direction: column; align-items: center; justify-content: center;">
+        <div style="text-align: center; animation: fadeInScale 0.5s ease-out;">
+            <h1
+                style="color: #F0E68C; font-size: 56px; margin: 0 0 15px 0; text-shadow: 0 0 20px #FFD700, 4px 4px 0 rgba(0,0,0,0.3); font-weight: 700;">
+                🌙 Stage 2 🌙</h1>
+            <h2
+                style="color: #87CEEB; font-size: 36px; margin: 0 0 30px 0; text-shadow: 0 0 15px #4FC3F7; font-weight: 700;">
+                Moonlight Battle</h2>
 
-                <div
-                    style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%); backdrop-filter: blur(10px); padding: 25px 40px; border-radius: 20px; border: 3px solid rgba(240, 230, 140, 0.5); margin-bottom: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-width: 500px;">
-                    <p style="color: #FFF; font-size: 24px; margin: 0 0 15px 0; font-weight: 700;">🎉 1단계 클리어! 🎉</p>
-                    <p style="color: #FFD93D; font-size: 22px; margin: 0 0 20px 0; font-weight: 600;">점수: <span
-                            id="stage1ScoreDisplay"></span></p>
-                    <div style="border-top: 2px solid rgba(255, 255, 255, 0.3); padding-top: 15px;">
-                        <p style="color: #FF6B9D; font-size: 20px; margin: 0 0 10px 0; font-weight: 700;">⚠️ 난이도 상승! ⚠️
-                        </p>
-                        <p style="color: #FFF; font-size: 16px; margin: 3px 0; font-weight: 600;">✨ 더 빠른 적들</p>
-                        <p style="color: #FFF; font-size: 16px; margin: 3px 0; font-weight: 600;">⚡ 강력한 보스 (체력 20)</p>
-                        <p style="color: #FFF; font-size: 16px; margin: 3px 0; font-weight: 600;">🎯 500점 모아 보스 등장</p>
-                    </div>
+            <div
+                style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%); backdrop-filter: blur(10px); padding: 25px 40px; border-radius: 20px; border: 3px solid rgba(240, 230, 140, 0.5); margin-bottom: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-width: 500px;">
+                <p style="color: #FFF; font-size: 24px; margin: 0 0 15px 0; font-weight: 700;">🎉 1단계 클리어! 🎉</p>
+                <p style="color: #FFD93D; font-size: 22px; margin: 0 0 20px 0; font-weight: 600;">점수: <span
+                        id="stage1ScoreDisplay"></span></p>
+                <div style="border-top: 2px solid rgba(255, 255, 255, 0.3); padding-top: 15px;">
+                    <p style="color: #FF6B9D; font-size: 20px; margin: 0 0 10px 0; font-weight: 700;">⚠️ 난이도 상승! ⚠️
+                    </p>
+                    <p style="color: #FFF; font-size: 16px; margin: 3px 0; font-weight: 600;">✨ 더 빠른 적들</p>
+                    <p style="color: #FFF; font-size: 16px; margin: 3px 0; font-weight: 600;">⚡ 강력한 보스 (체력 20)</p>
+                    <p style="color: #FFF; font-size: 16px; margin: 3px 0; font-weight: 600;">🎯 500점 모아 보스 등장</p>
                 </div>
-
-                <button id="stage2StartBtn"
-                    style="background: linear-gradient(135deg, #F0E68C 0%, #DAA520 100%); color: #2C3E50; border: 5px solid #FFF; padding: 18px 50px; font-size: 28px; border-radius: 25px; cursor: pointer; font-weight: 700; font-family: 'Fredoka', sans-serif; box-shadow: 0 8px 30px rgba(240, 230, 140, 0.5), 0 0 20px rgba(240, 230, 140, 0.3); transition: all 0.3s;">
-                    🚀 Start Stage 2! 🚀
-                </button>
             </div>
+
+            <button id="stage2StartBtn"
+                style="background: linear-gradient(135deg, #F0E68C 0%, #DAA520 100%); color: #2C3E50; border: 5px solid #FFF; padding: 18px 50px; font-size: 28px; border-radius: 25px; cursor: pointer; font-weight: 700; font-family: 'Fredoka', sans-serif; box-shadow: 0 8px 30px rgba(240, 230, 140, 0.5), 0 0 20px rgba(240, 230, 140, 0.3); transition: all 0.3s;">
+                🚀 Start Stage 2! 🚀
+            </button>
         </div>
-        <style>
-            @keyframes fadeInScale {
-                from {
-                    opacity: 0;
-                    transform: scale(0.8);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: scale(1);
-                }
+    </div>
+    <style>
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
             }
 
-            #stage2StartBtn:hover {
-                transform: scale(1.05);
-                box-shadow: 0 10px 40px rgba(240, 230, 140, 0.7), 0 0 30px rgba(240, 230, 140, 0.5);
+            to {
+                opacity: 1;
+                transform: scale(1);
             }
-        </style>
+        }
+
+        #stage2StartBtn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px rgba(240, 230, 140, 0.7), 0 0 30px rgba(240, 230, 140, 0.5);
+        }
+    </style>
     </div>
 
     <script>
@@ -822,30 +869,11 @@
                 btnJump.style.background = 'rgba(255, 255, 255, 0.6)';
             }, { passive: false });
 
-            // Fullscreen Toggle
-            const btnFullscreen = document.getElementById('btnFullscreen');
-            if (btnFullscreen) {
-                btnFullscreen.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    if (!document.fullscreenElement) {
-                        document.documentElement.requestFullscreen().catch(err => {
-                            console.log(`Error attempting to enable fullscreen: ${err.message}`);
-                        });
-                    } else {
-                        if (document.exitFullscreen) {
-                            document.exitFullscreen();
-                        }
-                    }
-                    btnFullscreen.style.transform = 'scale(0.95)';
-                    btnFullscreen.style.background = 'rgba(255, 255, 255, 0.9)';
-                }, { passive: false });
-
-                btnFullscreen.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    btnFullscreen.style.transform = 'scale(1)';
-                    btnFullscreen.style.background = 'rgba(255, 255, 255, 0.6)';
-                }, { passive: false });
-            }
+            btnJump.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                btnJump.style.transform = 'scale(1)';
+                btnJump.style.background = 'rgba(255, 255, 255, 0.6)';
+            }, { passive: false });
 
             btnShoot.addEventListener('touchstart', (e) => {
                 e.preventDefault();
