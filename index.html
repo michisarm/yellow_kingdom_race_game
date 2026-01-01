@@ -194,6 +194,7 @@
         </div>
         <div id="mobileControls">
             <div class="control-btn" id="btnJump">🦘</div>
+            <div class="control-btn" id="btnFullscreen" style="font-size: 24px;">⛶</div>
             <div class="control-btn" id="btnShoot">🥚</div>
         </div>
         <div id="gameOver" style="display: none;">
@@ -628,36 +629,22 @@
         }
 
         // 시작 화면 클릭 감지
-        // 시작 화면 클릭 감지
+        // 시작 화면 클릭 감지 - 화면 아무곳이나 누르면 시작
         const startCanvas = document.getElementById('startCanvas');
 
-        function handleStartInput(x, y, rectWidth, rectHeight) {
-            const canvas = document.getElementById('startCanvas');
-            // CSS 크기와 캔버스 내부 크기의 비율 계산
-            const scaleX = canvas.width / rectWidth;
-            const scaleY = canvas.height / rectHeight;
-
-            const scaledX = x * scaleX;
-            const scaledY = y * scaleY;
-
-            // Start Race 버튼 영역
-            if (scaledX >= 300 && scaledX <= 600 && scaledY >= 520 && scaledY <= 580) {
+        function handleStartInput() {
+            if (gameState === 'start') {
                 startGame();
             }
         }
 
         startCanvas?.addEventListener('click', (e) => {
-            const rect = e.target.getBoundingClientRect();
-            handleStartInput(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height);
+            handleStartInput();
         });
 
         startCanvas?.addEventListener('touchstart', (e) => {
-            // 터치 이벤트 기본 동작 방지 (스크롤 등)
             if (e.cancelable) e.preventDefault();
-
-            const rect = e.target.getBoundingClientRect();
-            const touch = e.touches[0];
-            handleStartInput(touch.clientX - rect.left, touch.clientY - rect.top, rect.width, rect.height);
+            handleStartInput();
         }, { passive: false });
 
         let gameState = 'start';
@@ -834,6 +821,31 @@
                 btnJump.style.transform = 'scale(1)';
                 btnJump.style.background = 'rgba(255, 255, 255, 0.6)';
             }, { passive: false });
+
+            // Fullscreen Toggle
+            const btnFullscreen = document.getElementById('btnFullscreen');
+            if (btnFullscreen) {
+                btnFullscreen.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(err => {
+                            console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                        });
+                    } else {
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen();
+                        }
+                    }
+                    btnFullscreen.style.transform = 'scale(0.95)';
+                    btnFullscreen.style.background = 'rgba(255, 255, 255, 0.9)';
+                }, { passive: false });
+
+                btnFullscreen.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    btnFullscreen.style.transform = 'scale(1)';
+                    btnFullscreen.style.background = 'rgba(255, 255, 255, 0.6)';
+                }, { passive: false });
+            }
 
             btnShoot.addEventListener('touchstart', (e) => {
                 e.preventDefault();
