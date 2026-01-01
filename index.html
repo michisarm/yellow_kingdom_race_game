@@ -625,9 +625,14 @@
 
         // 시작 화면 클릭 감지
         document.getElementById('startCanvas')?.addEventListener('click', (e) => {
-            const rect = e.target.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const canvas = e.target;
+            const rect = canvas.getBoundingClientRect();
+            // CSS 크기와 캔버스 내부 크기의 비율 계산
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
 
             // Start Race 버튼 영역
             if (x >= 300 && x <= 600 && y >= 520 && y <= 580) {
@@ -756,17 +761,24 @@
         document.addEventListener('keydown', (e) => {
             keys[e.code] = true;
 
-            if (e.code === 'Space' && !player.jumping && gameState === 'playing') {
-                player.velocityY = player.jumpPower;
-                player.jumping = true;
+            if (e.code === 'Space') {
+                // Jump Logic
+                if (!player.jumping && gameState === 'playing') {
+                    player.velocityY = player.jumpPower;
+                    player.jumping = true;
+                }
+                // Start Game Logic (if on start screen)
+                if (gameState === 'start') {
+                    startGame();
+                }
+                // Restart Logic
+                if (gameState === 'gameOver') {
+                    location.reload();
+                }
             }
 
             if (e.code === 'Enter' && gameState === 'playing') {
                 shootEgg();
-            }
-
-            if (e.code === 'Space' && gameState === 'gameOver') {
-                location.reload();
             }
         });
 
