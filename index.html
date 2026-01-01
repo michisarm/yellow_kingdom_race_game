@@ -1,0 +1,2167 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>옐로우 왕국 레이싱</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #FFE66D 0%, #FFD93D 50%, #FFC107 100%);
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 900px;
+            height: 650px;
+            background: linear-gradient(180deg, #FFF9E5 0%, #FFFACD 30%, #FFD700 100%);
+            border: 8px solid #FF6B9D;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), inset 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #2C3E50;
+            font-size: 24px;
+            font-weight: 700;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px 25px;
+            border-radius: 15px;
+            border: 4px solid #FF6B9D;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #ui div {
+            margin: 5px 0;
+        }
+
+        #bossHealth {
+            background: rgba(255, 107, 157, 0.9);
+            color: white;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        #gameOver,
+        #victory {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #FF6B9D 0%, #C06C84 100%);
+            padding: 50px 60px;
+            border-radius: 30px;
+            text-align: center;
+            display: none;
+            z-index: 20;
+            border: 8px solid #FFF;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        #victory {
+            background: linear-gradient(135deg, #FFD93D 0%, #FF6B9D 100%);
+        }
+
+        #gameOver h1,
+        #victory h1 {
+            color: #FFF;
+            font-size: 48px;
+            margin: 0 0 20px 0;
+            text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+            font-weight: 700;
+        }
+
+        #gameOver p,
+        #victory p {
+            color: #FFF;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        button {
+            background: linear-gradient(135deg, #FF6B9D 0%, #C06C84 100%);
+            color: white;
+            border: 4px solid #FFF;
+            padding: 18px 40px;
+            font-size: 24px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 700;
+            margin-top: 20px;
+            font-family: 'Fredoka', sans-serif;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        #mobileControls {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            padding: 0 40px;
+            justify-content: space-between;
+            z-index: 100;
+            pointer-events: none;
+            /* Allow clicks to pass through container */
+        }
+
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 4px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: #2C3E50;
+            pointer-events: auto;
+            /* Re-enable pointer events for buttons */
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-btn:active {
+            background: rgba(255, 255, 255, 0.9);
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 1024px) {
+            #mobileControls {
+                display: flex;
+            }
+
+            #gameContainer {
+                width: 100vw;
+                height: 100vh;
+            }
+
+            canvas {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: contain;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="900" height="650"></canvas>
+        <div id="ui">
+            <div>❤️ 체력: <span id="playerHp">3</span>/3</div>
+            <div>⭐ 점수: <span id="score">0</span></div>
+            <div style="color: #FFD93D; font-weight: 700;">🎮 Stage: <span id="stageDisplay">1</span></div>
+            <div id="bossHealth" style="display:none;">
+                💥 보스 체력: <span id="bossHp">10</span>/<span id="bossMaxHp">10</span>
+            </div>
+        </div>
+        <div id="gameOver" style="display: none;">
+            <h1>💔 게임 오버!</h1>
+            <p style="margin: 15px 0;">최종 점수: <span id="gameOverScore"></span></p>
+            <div id="rankDisplay"
+                style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; margin: 20px 0;">
+                <h3 style="color: #FF6B9D; margin: 0 0 15px 0;">🏆 최고 기록 TOP 5 🏆</h3>
+                <div id="rankList" style="color: #2C3E50; font-size: 18px; text-align: left;"></div>
+            </div>
+            <p style="font-size: 18px;">스페이스로 다시 시작하세요</p>
+        </div>
+        <div id="victory" style="display: none;">
+            <h1>🎉 승리! 🎉</h1>
+            <p>병아리가 왕국을 구했어요!</p>
+            <p style="margin-top: 15px;">최종 점수: <span id="finalScore"></span></p>
+            <div id="victoryRankDisplay"
+                style="background: rgba(255, 255, 255, 0.9); padding: 20px; border-radius: 15px; margin: 20px 0;">
+                <h3 style="color: #FFD93D; margin: 0 0 15px 0;">🏆 최고 기록 TOP 5 🏆</h3>
+                <div id="victoryRankList" style="color: #2C3E50; font-size: 18px; text-align: left;"></div>
+            </div>
+            <button onclick="location.reload()">다시 하기</button>
+        </div>
+        <div id="startScreen"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <canvas id="startCanvas" width="900" height="650" style="position: absolute; top: 0; left: 0;"></canvas>
+        </div>
+        <div id="stage2Transition"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 25; display: none; flex-direction: column; align-items: center; justify-content: center;">
+            <div style="text-align: center; animation: fadeInScale 0.5s ease-out;">
+                <h1
+                    style="color: #F0E68C; font-size: 56px; margin: 0 0 15px 0; text-shadow: 0 0 20px #FFD700, 4px 4px 0 rgba(0,0,0,0.3); font-weight: 700;">
+                    🌙 Stage 2 🌙</h1>
+                <h2
+                    style="color: #87CEEB; font-size: 36px; margin: 0 0 30px 0; text-shadow: 0 0 15px #4FC3F7; font-weight: 700;">
+                    Moonlight Battle</h2>
+
+                <div
+                    style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%); backdrop-filter: blur(10px); padding: 25px 40px; border-radius: 20px; border: 3px solid rgba(240, 230, 140, 0.5); margin-bottom: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); max-width: 500px;">
+                    <p style="color: #FFF; font-size: 24px; margin: 0 0 15px 0; font-weight: 700;">🎉 1단계 클리어! 🎉</p>
+                    <p style="color: #FFD93D; font-size: 22px; margin: 0 0 20px 0; font-weight: 600;">점수: <span
+                            id="stage1ScoreDisplay"></span></p>
+                    <div style="border-top: 2px solid rgba(255, 255, 255, 0.3); padding-top: 15px;">
+                        <p style="color: #FF6B9D; font-size: 20px; margin: 0 0 10px 0; font-weight: 700;">⚠️ 난이도 상승! ⚠️
+                        </p>
+                        <p style="color: #FFF; font-size: 16px; margin: 3px 0; font-weight: 600;">✨ 더 빠른 적들</p>
+                        <p style="color: #FFF; font-size: 16px; margin: 3px 0; font-weight: 600;">⚡ 강력한 보스 (체력 20)</p>
+                        <p style="color: #FFF; font-size: 16px; margin: 3px 0; font-weight: 600;">🎯 500점 모아 보스 등장</p>
+                    </div>
+                </div>
+
+                <button id="stage2StartBtn"
+                    style="background: linear-gradient(135deg, #F0E68C 0%, #DAA520 100%); color: #2C3E50; border: 5px solid #FFF; padding: 18px 50px; font-size: 28px; border-radius: 25px; cursor: pointer; font-weight: 700; font-family: 'Fredoka', sans-serif; box-shadow: 0 8px 30px rgba(240, 230, 140, 0.5), 0 0 20px rgba(240, 230, 140, 0.3); transition: all 0.3s;">
+                    🚀 Start Stage 2! 🚀
+                </button>
+            </div>
+        </div>
+        <style>
+            @keyframes fadeInScale {
+                from {
+                    opacity: 0;
+                    transform: scale(0.8);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+
+            #stage2StartBtn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 10px 40px rgba(240, 230, 140, 0.7), 0 0 30px rgba(240, 230, 140, 0.5);
+            }
+        </style>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 시작 화면 그리기
+        function drawStartScreen() {
+            const startCanvas = document.getElementById('startCanvas');
+            if (!startCanvas) return;
+            const sctx = startCanvas.getContext('2d');
+
+            // 배경
+            const skyGradient = sctx.createLinearGradient(0, 0, 0, 650);
+            skyGradient.addColorStop(0, '#FFF9E5');
+            skyGradient.addColorStop(0.5, '#FFFACD');
+            skyGradient.addColorStop(1, '#FFD700');
+            sctx.fillStyle = skyGradient;
+            sctx.fillRect(0, 0, 900, 650);
+
+            // 태양 광선
+            const sunX = 450, sunY = 100;
+            for (let i = 0; i < 16; i++) {
+                const angle = (i / 16) * Math.PI * 2;
+                const gradient = sctx.createLinearGradient(sunX, sunY, sunX + Math.cos(angle) * 400, sunY + Math.sin(angle) * 400);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                gradient.addColorStop(0.5, 'rgba(255, 235, 59, 0.1)');
+                gradient.addColorStop(1, 'rgba(255, 235, 59, 0)');
+                sctx.fillStyle = gradient;
+                sctx.beginPath();
+                sctx.moveTo(sunX, sunY);
+                sctx.arc(sunX, sunY, 400, angle - 0.05, angle + 0.05);
+                sctx.closePath();
+                sctx.fill();
+            }
+
+            // 제목
+            sctx.font = 'bold 64px Fredoka';
+            sctx.textAlign = 'center';
+            sctx.fillStyle = '#FF6B9D';
+            sctx.fillText('Yellow Kingdom', 450, 70);
+            sctx.fillStyle = '#FFD93D';
+            sctx.strokeStyle = '#FF6B9D';
+            sctx.lineWidth = 4;
+            sctx.strokeText('Yellow Kingdom', 450, 70);
+            sctx.fillText('Yellow Kingdom', 450, 70);
+
+            sctx.font = 'bold 32px Fredoka';
+            sctx.fillStyle = '#FF6B9D';
+            sctx.fillText('Racing Adventure', 450, 110);
+
+            // Sweet Heart 병아리 (왼쪽)
+            sctx.save();
+            sctx.translate(200, 200);
+
+            // 몸통
+            const bodyGrad = sctx.createRadialGradient(0, -3, 5, 0, 0, 28);
+            bodyGrad.addColorStop(0, '#FFF9E5');
+            bodyGrad.addColorStop(0.6, '#FFEB3B');
+            bodyGrad.addColorStop(1, '#FBC02D');
+            sctx.fillStyle = bodyGrad;
+            sctx.beginPath();
+            sctx.arc(0, 0, 35, 0, Math.PI * 2);
+            sctx.fill();
+            sctx.strokeStyle = '#F57F17';
+            sctx.lineWidth = 3;
+            sctx.stroke();
+
+            // 헬멧
+            sctx.fillStyle = '#FFF';
+            sctx.beginPath();
+            sctx.arc(0, -8, 28, Math.PI, 0);
+            sctx.fill();
+            sctx.strokeStyle = '#E0E0E0';
+            sctx.lineWidth = 3;
+            sctx.stroke();
+
+            // 귀마개
+            sctx.fillStyle = '#FFF';
+            sctx.beginPath();
+            sctx.arc(-23, -3, 10, 0, Math.PI * 2);
+            sctx.arc(23, -3, 10, 0, Math.PI * 2);
+            sctx.fill();
+            sctx.stroke();
+
+            // 눈
+            sctx.fillStyle = '#000';
+            sctx.beginPath();
+            sctx.arc(-10, 0, 6, 0, Math.PI * 2);
+            sctx.arc(10, 0, 6, 0, Math.PI * 2);
+            sctx.fill();
+
+            // 부리
+            sctx.fillStyle = '#FF9800';
+            sctx.beginPath();
+            sctx.moveTo(0, 8);
+            sctx.lineTo(8, 13);
+            sctx.lineTo(0, 15);
+            sctx.lineTo(-8, 13);
+            sctx.closePath();
+            sctx.fill();
+
+            // 하트
+            sctx.fillStyle = '#FF6B9D';
+            sctx.font = 'bold 20px Arial';
+            sctx.fillText('♥', 25, 23);
+
+            sctx.restore();
+
+            // 이름표
+            sctx.fillStyle = '#8B4513';
+            sctx.fillRect(125, 250, 150, 40);
+            sctx.strokeStyle = '#654321';
+            sctx.lineWidth = 4;
+            sctx.strokeRect(125, 250, 150, 40);
+            sctx.fillStyle = '#FFF';
+            sctx.font = 'bold 18px Fredoka';
+            sctx.fillText('Sweet Heart ❤️', 200, 276);
+
+            // VS
+            sctx.font = 'bold 48px Fredoka';
+            sctx.fillStyle = '#FF6B9D';
+            sctx.fillText('VS', 450, 220);
+
+            // Donut Army (오른쪽)
+            sctx.save();
+            sctx.translate(700, 200);
+
+            // 도넛 몸
+            const donutGrad = sctx.createRadialGradient(-3, -3, 5, 0, 0, 30);
+            donutGrad.addColorStop(0, '#E6B87A');
+            donutGrad.addColorStop(1, '#A0724C');
+            sctx.fillStyle = donutGrad;
+            sctx.beginPath();
+            sctx.arc(0, 0, 30, 0, Math.PI * 2);
+            sctx.fill();
+
+            // 구멍
+            sctx.fillStyle = '#FFFACD';
+            sctx.beginPath();
+            sctx.arc(0, 0, 14, 0, Math.PI * 2);
+            sctx.fill();
+
+            // 아이싱
+            const icingGrad = sctx.createRadialGradient(0, -18, 5, 0, -12, 28);
+            icingGrad.addColorStop(0, '#FFB6C1');
+            icingGrad.addColorStop(1, '#FF69B4');
+            sctx.fillStyle = icingGrad;
+            sctx.beginPath();
+            sctx.arc(0, -4, 27, 0, Math.PI);
+            sctx.fill();
+
+            // 스프링클
+            const colors = ['#FFF', '#FFB6C1', '#87CEEB'];
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI;
+                const sx = Math.cos(angle) * 20;
+                const sy = Math.sin(angle) * 10 - 6;
+                sctx.fillStyle = colors[i % 3];
+                sctx.save();
+                sctx.translate(sx, sy);
+                sctx.rotate(angle);
+                sctx.fillRect(-1.5, -5, 3, 10);
+                sctx.restore();
+            }
+
+            // 눈
+            sctx.fillStyle = '#000';
+            sctx.beginPath();
+            sctx.arc(-9, 0, 5, 0, Math.PI * 2);
+            sctx.arc(9, 0, 5, 0, Math.PI * 2);
+            sctx.fill();
+
+            sctx.restore();
+
+            // 이름표
+            sctx.fillStyle = '#FFB6C1';
+            sctx.fillRect(625, 250, 150, 40);
+            sctx.strokeStyle = '#FF69B4';
+            sctx.lineWidth = 4;
+            sctx.strokeRect(625, 250, 150, 40);
+            sctx.fillStyle = '#8B4513';
+            sctx.font = 'bold 18px Fredoka';
+            sctx.fillText('Donut Army 🍩', 700, 276);
+
+            // Final Boss 라벨
+            sctx.fillStyle = '#999';
+            sctx.font = 'bold 16px Fredoka';
+            sctx.fillText('Final Boss', 450, 330);
+
+            // Boss (작게)
+            sctx.save();
+            sctx.translate(450, 400);
+            sctx.scale(0.6, 0.6);
+
+            // 무지개 소용돌이 몸체
+            const bossGrad = sctx.createRadialGradient(0, 0, 10, 0, 0, 50);
+            bossGrad.addColorStop(0, '#FFE5E5');
+            bossGrad.addColorStop(0.3, '#FFB6C1');
+            bossGrad.addColorStop(0.6, '#87CEEB');
+            bossGrad.addColorStop(1, '#DDA0DD');
+            sctx.fillStyle = bossGrad;
+            sctx.beginPath();
+            sctx.arc(0, 0, 50, 0, Math.PI * 2);
+            sctx.fill();
+            sctx.strokeStyle = '#FF1493';
+            sctx.lineWidth = 3;
+            sctx.stroke();
+
+            // 눈
+            sctx.fillStyle = '#000';
+            sctx.beginPath();
+            sctx.arc(-15, -13, 7, 0, Math.PI * 2);
+            sctx.arc(15, -13, 7, 0, Math.PI * 2);
+            sctx.fill();
+
+            sctx.fillStyle = '#F00';
+            sctx.beginPath();
+            sctx.arc(-13, -15, 2.5, 0, Math.PI * 2);
+            sctx.arc(17, -15, 2.5, 0, Math.PI * 2);
+            sctx.fill();
+
+            // 눈썹
+            sctx.strokeStyle = '#000';
+            sctx.lineWidth = 4;
+            sctx.beginPath();
+            sctx.moveTo(-25, -20);
+            sctx.lineTo(-15, -16);
+            sctx.lineTo(-9, -20);
+            sctx.moveTo(25, -20);
+            sctx.lineTo(15, -16);
+            sctx.lineTo(9, -20);
+            sctx.stroke();
+
+            // 이빨
+            sctx.fillStyle = '#FFF';
+            sctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const tx = -28 + i * 7;
+                sctx.moveTo(tx, 6);
+                sctx.lineTo(tx + 3.5, 18);
+                sctx.lineTo(tx + 7, 6);
+            }
+            sctx.closePath();
+            sctx.fill();
+
+            // 팔
+            const armColors = ['#FF6B9D', '#FFF'];
+            for (let i = 0; i < 4; i++) {
+                sctx.fillStyle = armColors[i % 2];
+                sctx.fillRect(-55, -10 + i * 6, 20, 6);
+                sctx.fillRect(35, -10 + i * 6, 20, 6);
+            }
+
+            sctx.restore();
+
+            // 이름표
+            sctx.fillStyle = 'rgba(255, 182, 193, 0.9)';
+            sctx.fillRect(350, 465, 200, 35);
+            sctx.strokeStyle = '#FF1493';
+            sctx.lineWidth = 3;
+            sctx.strokeRect(350, 465, 200, 35);
+            sctx.fillStyle = '#FFF';
+            sctx.font = 'bold 16px Fredoka';
+            sctx.fillText('Candy King 👑', 450, 488);
+
+            // Start Race 버튼
+            const btnX = 450, btnY = 550;
+            const btnW = 300, btnH = 60;
+
+            const btnGrad = sctx.createLinearGradient(btnX - btnW / 2, btnY - btnH / 2, btnX - btnW / 2, btnY + btnH / 2);
+            btnGrad.addColorStop(0, '#FFD93D');
+            btnGrad.addColorStop(1, '#FFA500');
+            sctx.fillStyle = btnGrad;
+            sctx.strokeStyle = '#FF6B9D';
+            sctx.lineWidth = 6;
+
+            sctx.beginPath();
+            sctx.roundRect(btnX - btnW / 2, btnY - btnH / 2, btnW, btnH, 20);
+            sctx.fill();
+            sctx.stroke();
+
+            sctx.fillStyle = '#8B4513';
+            sctx.font = 'bold 28px Fredoka';
+            sctx.fillText('🏁 Start Race! 🏁', btnX, btnY + 10);
+
+            // 조작법 박스
+            sctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            sctx.strokeStyle = '#8B4513';
+            sctx.lineWidth = 4;
+            sctx.beginPath();
+            sctx.roundRect(300, 600, 300, 40, 10);
+            sctx.fill();
+            sctx.stroke();
+
+            sctx.fillStyle = '#2C3E50';
+            sctx.font = 'bold 16px Fredoka';
+            sctx.textAlign = 'left';
+            sctx.fillText('🎮 조작법:', 315, 625);
+            sctx.font = '14px Fredoka';
+            sctx.fillText('SPACE: 점프 | ENTER: 달걀 발사', 400, 625);
+        }
+
+        // 순위 표시 함수
+        function displayRankings(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            if (highScores.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #999;">아직 기록이 없습니다</div>';
+                return;
+            }
+
+            const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+
+            highScores.forEach((record, index) => {
+                const rankItem = document.createElement('div');
+                rankItem.style.cssText = 'padding: 8px; margin: 5px 0; background: rgba(255, 235, 59, 0.2); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;';
+
+                const isNewRecord = record.score === score && index === 0;
+                if (isNewRecord) {
+                    rankItem.style.background = 'rgba(255, 107, 157, 0.3)';
+                    rankItem.style.border = '2px solid #FF6B9D';
+                }
+
+                rankItem.innerHTML = `
+                    <span style="font-weight: 700;">${medals[index]} ${index + 1}위</span>
+                    <span style="font-weight: 700; color: #FF6B9D;">${record.score}점</span>
+                    <span style="font-size: 14px; color: #666;">${record.date}</span>
+                `;
+
+                container.appendChild(rankItem);
+            });
+        }
+
+        // 게임 시작 함수
+        function startGame() {
+            gameState = 'playing';
+            document.getElementById('startScreen').style.display = 'none';
+        }
+
+        // 2단계 시작 함수
+        function startStage2() {
+            document.getElementById('stage2Transition').style.display = 'none';
+            gameState = 'playing';
+        }
+
+        // 2단계 전환 화면 표시
+        function showStage2Transition(stage1Score) {
+            document.getElementById('stage1ScoreDisplay').textContent = stage1Score + '점';
+            document.getElementById('stage2Transition').style.display = 'flex';
+
+            // 버튼 이벤트 리스너
+            document.getElementById('stage2StartBtn').onclick = startStage2;
+        }
+
+        // 시작 화면 클릭 감지
+        document.getElementById('startCanvas')?.addEventListener('click', (e) => {
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Start Race 버튼 영역
+            if (x >= 300 && x <= 600 && y >= 520 && y <= 580) {
+                startGame();
+            }
+        });
+
+        let gameState = 'start';
+        let score = 0;
+        let scrollSpeed = 4;
+        let backgroundX = 0;
+        let spawnTimer = 0;
+        let bossSpawned = false;
+        let bossHitEffect = 0;
+        let gameStage = 1; // 게임 단계 (1 or 2)
+
+        // 최고 점수 기록 (localStorage에 저장)
+        let highScores = [];
+
+        // 최고 점수 불러오기
+        function loadHighScores() {
+            const saved = localStorage.getItem('yellowKingdomHighScores');
+            if (saved) {
+                highScores = JSON.parse(saved);
+            } else {
+                highScores = [];
+            }
+        }
+
+        // 최고 점수 저장
+        function saveHighScore(newScore) {
+            highScores.push({
+                score: newScore,
+                date: new Date().toLocaleDateString('ko-KR')
+            });
+
+            // 점수 높은 순으로 정렬
+            highScores.sort((a, b) => b.score - a.score);
+
+            // 상위 5개만 유지
+            highScores = highScores.slice(0, 5);
+
+            // localStorage에 저장
+            localStorage.setItem('yellowKingdomHighScores', JSON.stringify(highScores));
+        }
+
+        const keys = {};
+
+        // 주인공 병아리
+        const player = {
+            x: 120,
+            y: 450,
+            width: 55,
+            height: 55,
+            velocityY: 0,
+            jumping: false,
+            gravity: 0.7,
+            jumpPower: -14,
+            groundY: 450,
+            hp: 3,
+            maxHp: 3,
+            invincible: 0
+        };
+
+        // 달걀 배열
+        const eggs = [];
+
+        // 적 배열
+        const enemies = [];
+
+        // 보스 번개 공격
+        const lightnings = [];
+
+        // 보스
+        let boss = null;
+
+        // 배경 요소들 - 꽃
+        const flowers = [];
+        for (let i = 0; i < 80; i++) {
+            flowers.push({
+                x: Math.random() * 2400,
+                y: 520 + Math.random() * 100,
+                size: Math.max(12 + Math.random() * 15, 8),
+                type: Math.floor(Math.random() * 3),
+                petalColor: ['#FFB6C1', '#FF69B4', '#87CEEB', '#DDA0DD'][Math.floor(Math.random() * 4)]
+            });
+        }
+
+        // 작은 병아리들
+        const miniChicks = [];
+        for (let i = 0; i < 25; i++) {
+            miniChicks.push({
+                x: Math.random() * 2400,
+                y: 540 + Math.random() * 60,
+                size: Math.max(10 + Math.random() * 8, 5),
+                hopOffset: Math.random() * Math.PI * 2
+            });
+        }
+
+        // 구름
+        const clouds = [];
+        for (let i = 0; i < 8; i++) {
+            clouds.push({
+                x: Math.random() * 2400,
+                y: 50 + Math.random() * 180,
+                size: Math.max(50 + Math.random() * 40, 30),
+                speed: 0.2 + Math.random() * 0.3
+            });
+        }
+
+        // 오아시스 (배경 멀리)
+        const oasis = {
+            x: 1200,
+            y: 380,
+            width: 200,
+            height: 60
+        };
+
+        // 야자수 (오아시스 근처)
+        const palms = [
+            { x: 1100, y: 360 },
+            { x: 1350, y: 350 }
+        ];
+
+        // 키보드 이벤트
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+
+            if (e.code === 'Space' && !player.jumping && gameState === 'playing') {
+                player.velocityY = player.jumpPower;
+                player.jumping = true;
+            }
+
+            if (e.code === 'Enter' && gameState === 'playing') {
+                shootEgg();
+            }
+
+            if (e.code === 'Space' && gameState === 'gameOver') {
+                location.reload();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // Mobile Touch Controls
+        const btnJump = document.getElementById('btnJump');
+        const btnShoot = document.getElementById('btnShoot');
+
+        function simulateKey(code, type) {
+            const event = new KeyboardEvent(type, {
+                code: code,
+                bubbles: true,
+                cancelable: true,
+                view: window
+            });
+            document.dispatchEvent(event);
+        }
+
+        if (btnJump && btnShoot) {
+            btnJump.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent default double-tap zoom etc.
+                simulateKey('Space', 'keydown');
+                btnJump.style.transform = 'scale(0.95)';
+                btnJump.style.background = 'rgba(255, 255, 255, 0.9)';
+            }, { passive: false });
+
+            btnJump.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                simulateKey('Space', 'keyup');
+                btnJump.style.transform = 'scale(1)';
+                btnJump.style.background = 'rgba(255, 255, 255, 0.6)';
+            }, { passive: false });
+
+            btnShoot.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                simulateKey('Enter', 'keydown');
+                btnShoot.style.transform = 'scale(0.95)';
+                btnShoot.style.background = 'rgba(255, 255, 255, 0.9)';
+            }, { passive: false });
+
+            btnShoot.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                simulateKey('Enter', 'keyup');
+                btnShoot.style.transform = 'scale(1)';
+                btnShoot.style.background = 'rgba(255, 255, 255, 0.6)';
+            }, { passive: false });
+        }
+
+        // 달걀 발사
+        function shootEgg() {
+            eggs.push({
+                x: player.x + player.width,
+                y: player.y + player.height / 2,
+                width: 18,
+                height: 24,
+                speed: 10,
+                rotation: 0
+            });
+        }
+
+        // 적 생성 (주인공과 동일한 수평 위치에서 다양한 높이)
+        function spawnEnemy() {
+            const positions = [
+                350,  // 위쪽
+                390,  // 중간 위
+                430,  // 중간
+                470,  // 중간 아래
+                510   // 아래
+            ];
+
+            // 2단계는 더 빠름
+            const baseSpeed = gameStage === 1 ? 3.5 : 4.5;
+            const speedVariation = gameStage === 1 ? 3 : 3.5;
+
+            enemies.push({
+                x: 900,
+                y: positions[Math.floor(Math.random() * positions.length)],
+                width: 50,
+                height: 50,
+                speed: baseSpeed + Math.random() * speedVariation,
+                bounceOffset: Math.random() * Math.PI * 2,
+                bounceSpeed: 0.1 + Math.random() * 0.1
+            });
+        }
+
+        // 보스 번개 공격
+        function spawnLightning() {
+            if (!boss) return;
+
+            const lightningSpeed = gameStage === 1 ? 4 : 6; // 2단계는 더 빠름
+            const lightningCount = gameStage === 1 ? 1 : 2; // 2단계는 2개씩 발사
+
+            for (let i = 0; i < lightningCount; i++) {
+                const offsetY = i * 60 - 30; // 여러 개 발사 시 y 위치 분산
+
+                lightnings.push({
+                    x: boss.x - 30,
+                    y: boss.y + 70 + offsetY,
+                    width: 20,
+                    height: 35,
+                    speed: lightningSpeed,
+                    targetY: player.y + 27 + offsetY,
+                    wiggle: 0
+                });
+            }
+        }
+
+        // 보스 생성
+        function spawnBoss() {
+            const bossHp = gameStage === 1 ? 10 : 20; // 2단계는 체력 2배
+
+            boss = {
+                x: 900,
+                y: 280,
+                width: 140,
+                height: 140,
+                speed: 2,
+                hp: bossHp,
+                maxHp: bossHp,
+                moveDirection: 1,
+                moveTimer: 0,
+                hitTimer: 0,
+                rotation: 0,
+                attackTimer: 0
+            };
+            document.getElementById('bossHealth').style.display = 'block';
+            document.getElementById('bossHp').textContent = bossHp;
+            document.getElementById('bossMaxHp').textContent = bossHp;
+        }
+
+        // 병아리 그리기 (디테일 강화)
+        function drawPlayer() {
+            const bounce = Math.sin(Date.now() * 0.01) * 2;
+            const baseY = player.y + bounce;
+
+            // 무적 상태일 때 깜빡임
+            if (player.invincible > 0 && Math.floor(player.invincible / 5) % 2 === 0) {
+                return;
+            }
+
+            ctx.save();
+            ctx.translate(player.x + 27, baseY + 27);
+
+            // 몸통 (그라데이션)
+            const bodyGradient = ctx.createRadialGradient(0, -3, 5, 0, 0, 28);
+            bodyGradient.addColorStop(0, '#FFF9E5');
+            bodyGradient.addColorStop(0.6, '#FFEB3B');
+            bodyGradient.addColorStop(1, '#FBC02D');
+            ctx.fillStyle = bodyGradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, 27, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 몸통 테두리
+            ctx.strokeStyle = '#F57F17';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 헬멧 (디테일)
+            ctx.fillStyle = '#FFF';
+            ctx.beginPath();
+            ctx.arc(0, -5, 22, Math.PI, 0);
+            ctx.fill();
+            ctx.strokeStyle = '#E0E0E0';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 헬멧 하이라이트
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.beginPath();
+            ctx.ellipse(-5, -10, 8, 5, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 헬멧 귀마개
+            ctx.fillStyle = '#FFF';
+            ctx.strokeStyle = '#E0E0E0';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(-18, -2, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(18, -2, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 눈
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(-8, 0, 5, 0, Math.PI * 2);
+            ctx.arc(8, 0, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 눈 하이라이트
+            ctx.fillStyle = '#FFF';
+            ctx.beginPath();
+            ctx.arc(-6, -2, 2, 0, Math.PI * 2);
+            ctx.arc(10, -2, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 부리
+            ctx.fillStyle = '#FF9800';
+            ctx.beginPath();
+            ctx.moveTo(0, 6);
+            ctx.lineTo(6, 10);
+            ctx.lineTo(0, 12);
+            ctx.lineTo(-6, 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#F57C00';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // 날개 (움직임)
+            const wingFlap = Math.sin(Date.now() * 0.02) * 0.3;
+            ctx.strokeStyle = '#FBC02D';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(-22, 8);
+            ctx.quadraticCurveTo(-28 + wingFlap * 5, 10, -30, 5);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(22, 8);
+            ctx.quadraticCurveTo(28 - wingFlap * 5, 10, 30, 5);
+            ctx.stroke();
+
+            // 하트
+            ctx.fillStyle = '#FF6B9D';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('♥', 20, 18);
+
+            // 다리
+            ctx.strokeStyle = '#FF9800';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-6, 24);
+            ctx.lineTo(-8, 32);
+            ctx.moveTo(6, 24);
+            ctx.lineTo(8, 32);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // 번개 그리기 (단순화)
+        function drawLightning(lightning) {
+            ctx.save();
+
+            // 번개 외곽 그로우 효과
+            ctx.shadowColor = '#FFFF00';
+            ctx.shadowBlur = 20;
+
+            const baseX = lightning.x;
+            const baseY = lightning.y;
+
+            // 번개 모양 (단순한 지그재그)
+            ctx.strokeStyle = '#FFFF00';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(baseX, baseY - 18);
+            ctx.lineTo(baseX - 8, baseY - 5);
+            ctx.lineTo(baseX + 4, baseY);
+            ctx.lineTo(baseX - 6, baseY + 12);
+            ctx.lineTo(baseX, baseY + 18);
+            ctx.stroke();
+
+            // 밝은 중심선
+            ctx.strokeStyle = '#FFFFE0';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // 도넛 적 그리기 (디테일 강화, 그림자 제거)
+        function drawEnemy(enemy) {
+            const bounceY = Math.sin(enemy.bounceOffset + Date.now() * enemy.bounceSpeed * 0.001) * 5;
+            const x = enemy.x + 25;
+            const y = enemy.y + 25 + bounceY;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(Date.now() * 0.001);
+
+            // 도넛 몸
+            const donutGradient = ctx.createRadialGradient(-3, -3, 5, 0, 0, 25);
+            donutGradient.addColorStop(0, '#E6B87A');
+            donutGradient.addColorStop(1, '#A0724C');
+            ctx.fillStyle = donutGradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, 24, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 도넛 구멍
+            ctx.fillStyle = '#FFFACD';
+            ctx.beginPath();
+            ctx.arc(0, 0, 11, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#D2B48C';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 핑크 아이싱 (그라데이션)
+            const icingGradient = ctx.createRadialGradient(0, -15, 5, 0, -10, 25);
+            icingGradient.addColorStop(0, '#FFB6C1');
+            icingGradient.addColorStop(1, '#FF69B4');
+            ctx.fillStyle = icingGradient;
+            ctx.beginPath();
+            ctx.arc(0, -3, 22, 0, Math.PI);
+            ctx.fill();
+
+            // 스프링클 (다양한 색상)
+            const sprinkleColors = ['#FFF', '#FFB6C1', '#87CEEB', '#DDA0DD', '#FFD700'];
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI + Date.now() * 0.0001;
+                const sx = Math.cos(angle) * 16;
+                const sy = Math.sin(angle) * 8 - 5;
+                ctx.fillStyle = sprinkleColors[i % sprinkleColors.length];
+                ctx.save();
+                ctx.translate(sx, sy);
+                ctx.rotate(angle + Math.PI / 4);
+                ctx.fillRect(-1, -4, 2, 8);
+                ctx.restore();
+            }
+
+            // 눈
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(-7, 0, 4, 0, Math.PI * 2);
+            ctx.arc(7, 0, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 화난 눈썹
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-10, -3);
+            ctx.lineTo(-4, -1);
+            ctx.moveTo(10, -3);
+            ctx.lineTo(4, -1);
+            ctx.stroke();
+
+            // 팔 (스트라이프)
+            const armColors = ['#FFB6C1', '#FFF'];
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            for (let i = 0; i < 2; i++) {
+                ctx.strokeStyle = armColors[i % 2];
+                ctx.beginPath();
+                ctx.moveTo(-20, 3 + i * 2);
+                ctx.lineTo(-26, 8 + i * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(20, 3 + i * 2);
+                ctx.lineTo(26, 8 + i * 2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // 보스 그리기 (디테일 강화 + 피격 리액션)
+        function drawBoss(boss) {
+            const shake = boss.hitTimer > 0 ? Math.sin(boss.hitTimer * 2) * 5 : 0;
+            const flash = boss.hitTimer > 0 ? Math.sin(boss.hitTimer * 4) * 0.5 + 0.5 : 0;
+            const x = boss.x + 70 + shake;
+            const y = boss.y + 70;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(boss.rotation);
+
+            // 소용돌이 배경 효과
+            const numSpirals = 8;
+            for (let i = 0; i < numSpirals; i++) {
+                const spiralAngle = (i / numSpirals) * Math.PI * 2 + Date.now() * 0.002;
+                const spiralRadius = 65;
+                const sx = Math.cos(spiralAngle) * spiralRadius;
+                const sy = Math.sin(spiralAngle) * spiralRadius;
+
+                const spiralGradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, 15);
+                spiralGradient.addColorStop(0, 'rgba(255, 182, 193, 0.8)');
+                spiralGradient.addColorStop(1, 'rgba(255, 182, 193, 0)');
+                ctx.fillStyle = spiralGradient;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 큰 캔디 몸체 (무지개 소용돌이)
+            const gradient = ctx.createRadialGradient(0, 0, 10, 0, 0, 65);
+            gradient.addColorStop(0, flash > 0.5 ? '#FFF' : '#FFE5E5');
+            gradient.addColorStop(0.2, '#FFB6C1');
+            gradient.addColorStop(0.4, '#87CEEB');
+            gradient.addColorStop(0.6, '#FFB6C1');
+            gradient.addColorStop(0.8, '#DDA0DD');
+            gradient.addColorStop(1, '#FF6B9D');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, 65, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 몸체 테두리
+            ctx.strokeStyle = flash > 0.5 ? '#FFF' : '#FF1493';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // 소용돌이 패턴 (여러 개)
+            for (let ring = 0; ring < 4; ring++) {
+                ctx.strokeStyle = ring % 2 === 0 ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 182, 193, 0.6)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+
+                const radius = 15 + ring * 14;
+                for (let angle = 0; angle < Math.PI * 2; angle += 0.1) {
+                    const r = Math.max(radius + Math.sin(angle * 3 + Date.now() * 0.003) * 3, 5);
+                    const px = Math.cos(angle) * r;
+                    const py = Math.sin(angle) * r;
+                    if (angle === 0) {
+                        ctx.moveTo(px, py);
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            // 캔디 장식
+            const candyColors = ['#FF6B9D', '#87CEEB', '#DDA0DD', '#FFD700', '#90EE90'];
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2;
+                const cx = Math.cos(angle) * 55;
+                const cy = Math.sin(angle) * 55;
+                ctx.fillStyle = candyColors[i % candyColors.length];
+                ctx.beginPath();
+                ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#FFF';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // 눈 (사악한 표정, 피격시 더 화남)
+            const eyeSize = boss.hitTimer > 0 ? 10 : 9;
+            const eyeY = boss.hitTimer > 0 ? -15 : -18;
+
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(-20, eyeY, eyeSize, 0, Math.PI * 2);
+            ctx.arc(20, eyeY, eyeSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 사악한 눈 하이라이트 (빨간색)
+            ctx.fillStyle = flash > 0.5 ? '#FFF' : '#F00';
+            ctx.beginPath();
+            ctx.arc(-18, eyeY - 2, 3, 0, Math.PI * 2);
+            ctx.arc(22, eyeY - 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 사악한 눈썹 (V자 형태로 더 화나게)
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-32, -28);
+            ctx.lineTo(-20, -20);
+            ctx.lineTo(-12, -26);
+            ctx.moveTo(32, -28);
+            ctx.lineTo(20, -20);
+            ctx.lineTo(12, -26);
+            ctx.stroke();
+
+            // 이빨 (위아래, 더 날카롭게)
+            ctx.fillStyle = '#FFF';
+            ctx.strokeStyle = '#E0E0E0';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < 12; i++) {
+                const tx = -54 + i * 9;
+                ctx.moveTo(tx, 8);
+                ctx.lineTo(tx + 4.5, 24);
+                ctx.lineTo(tx + 9, 8);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // 아래 이빨 (더 날카롭게)
+            ctx.beginPath();
+            for (let i = 0; i < 12; i++) {
+                const tx = -54 + i * 9;
+                ctx.moveTo(tx, 32);
+                ctx.lineTo(tx + 4.5, 16);
+                ctx.lineTo(tx + 9, 32);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // 입 (사악한 미소 - 아래로 내려간 형태)
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(0, 15, 30, 0.2 * Math.PI, 0.8 * Math.PI);
+            ctx.stroke();
+
+            // 사악한 입꼬리 올림
+            ctx.beginPath();
+            ctx.moveTo(-25, 8);
+            ctx.quadraticCurveTo(-30, 5, -32, 0);
+            ctx.moveTo(25, 8);
+            ctx.quadraticCurveTo(30, 5, 32, 0);
+            ctx.stroke();
+
+            // 캔디 스틱 팔 (스트라이프 더 디테일하게)
+            const armSegments = 6;
+            const armColors = ['#FF6B9D', '#FFF'];
+
+            for (let i = 0; i < armSegments; i++) {
+                ctx.fillStyle = armColors[i % 2];
+                ctx.fillRect(-75, -15 + i * 8, 30, 8);
+                ctx.fillRect(45, -15 + i * 8, 30, 8);
+            }
+
+            // 팔 테두리
+            ctx.strokeStyle = '#FF1493';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(-75, -15, 30, 48);
+            ctx.strokeRect(45, -15, 30, 48);
+
+            // 피격시 별 효과
+            if (boss.hitTimer > 0) {
+                ctx.fillStyle = 'rgba(255, 255, 0, ' + (boss.hitTimer / 10) + ')';
+                for (let i = 0; i < 5; i++) {
+                    const starAngle = (i / 5) * Math.PI * 2;
+                    const starX = Math.cos(starAngle) * 80;
+                    const starY = Math.sin(starAngle) * 80;
+                    ctx.beginPath();
+                    ctx.arc(starX, starY, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 피격 텍스트
+                ctx.fillStyle = '#F00';
+                ctx.font = 'bold 24px Fredoka';
+                ctx.textAlign = 'center';
+                ctx.fillText('아야!', 0, -90);
+            }
+
+            ctx.restore();
+
+            // 피격 타이머 감소
+            if (boss.hitTimer > 0) {
+                boss.hitTimer--;
+            }
+        }
+
+        // 달걀 그리기 (회전 효과)
+        function drawEgg(egg) {
+            ctx.save();
+            ctx.translate(egg.x, egg.y);
+            ctx.rotate(egg.rotation);
+
+            // 그림자
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.beginPath();
+            ctx.ellipse(2, 2, Math.max(egg.width / 2 + 1, 1), Math.max(egg.height / 2 + 1, 1), 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 달걀
+            const eggGradient = ctx.createRadialGradient(-3, -5, 5, 0, 0, Math.max(egg.height / 2, 1));
+            eggGradient.addColorStop(0, '#FFF');
+            eggGradient.addColorStop(1, '#F0F0F0');
+            ctx.fillStyle = eggGradient;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, Math.max(egg.width / 2, 1), Math.max(egg.height / 2, 1), 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 하이라이트
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.beginPath();
+            ctx.ellipse(-4, -6, 4, 6, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+
+            egg.rotation += 0.2;
+        }
+
+        // 배경 그리기 (디테일 대폭 강화)
+        function drawBackground() {
+            if (gameStage === 1) {
+                drawDayBackground();
+            } else {
+                drawNightBackground();
+            }
+        }
+
+        // 낮 배경
+        function drawDayBackground() {
+            // 하늘 그라데이션
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, 400);
+            skyGradient.addColorStop(0, '#FFF9E5');
+            skyGradient.addColorStop(0.5, '#FFFACD');
+            skyGradient.addColorStop(1, '#FFE66D');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, 900, 500);
+
+            // 태양 광선 (방사형)
+            const sunCenterX = 450;
+            const sunCenterY = 120;
+            for (let i = 0; i < 16; i++) {
+                const angle = (i / 16) * Math.PI * 2;
+                const gradient = ctx.createLinearGradient(
+                    sunCenterX, sunCenterY,
+                    sunCenterX + Math.cos(angle) * 600,
+                    sunCenterY + Math.sin(angle) * 600
+                );
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                gradient.addColorStop(0.3, 'rgba(255, 235, 59, 0.2)');
+                gradient.addColorStop(1, 'rgba(255, 235, 59, 0)');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.moveTo(sunCenterX, sunCenterY);
+                ctx.arc(sunCenterX, sunCenterY, 600, angle - 0.05, angle + 0.05);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // 태양 (그라데이션)
+            const sunGradient = ctx.createRadialGradient(sunCenterX, sunCenterY, 20, sunCenterX, sunCenterY, 70);
+            sunGradient.addColorStop(0, '#FFF');
+            sunGradient.addColorStop(0.4, '#FFF9E5');
+            sunGradient.addColorStop(0.7, '#FFEB3B');
+            sunGradient.addColorStop(1, '#FBC02D');
+            ctx.fillStyle = sunGradient;
+            ctx.beginPath();
+            ctx.arc(sunCenterX, sunCenterY, 60, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 태양 테두리
+            ctx.strokeStyle = '#F57F17';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 태양 반짝임
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            for (let i = 0; i < 12; i++) {
+                const sparkAngle = (i / 12) * Math.PI * 2 + Date.now() * 0.001;
+                const sparkDist = 75 + Math.max(Math.sin(Date.now() * 0.003 + i) * 10, 0);
+                const sx = sunCenterX + Math.cos(sparkAngle) * sparkDist;
+                const sy = sunCenterY + Math.sin(sparkAngle) * sparkDist;
+
+                ctx.save();
+                ctx.translate(sx, sy);
+                ctx.rotate(sparkAngle);
+                ctx.fillRect(-3, -10, 6, 20);
+                ctx.fillRect(-10, -3, 20, 6);
+                ctx.restore();
+            }
+
+            // 구름 (더 디테일하게)
+            clouds.forEach(cloud => {
+                const cx = (cloud.x - backgroundX * cloud.speed) % 2400;
+                if (cx < -100) return;
+
+                const cloudSize = Math.max(cloud.size, 30);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                ctx.beginPath();
+                ctx.arc(cx, cloud.y, cloudSize, 0, Math.PI * 2);
+                ctx.arc(cx + cloudSize * 0.8, cloud.y - cloudSize * 0.2, cloudSize * 0.8, 0, Math.PI * 2);
+                ctx.arc(cx + cloudSize * 0.5, cloud.y + cloudSize * 0.3, cloudSize * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 구름 그림자
+                ctx.fillStyle = 'rgba(200, 200, 200, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(cx + cloudSize * 0.4, cloud.y + cloudSize * 0.8, cloudSize * 0.9, Math.max(cloudSize * 0.3, 5), 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 오아시스 (배경 뒤쪽에 자연스럽게)
+            const oasisX = (oasis.x - backgroundX * 0.4) % 2400;
+            if (oasisX > -250 && oasisX < 900) {
+                // 물 (더 작고 뒤쪽에)
+                const waterGradient = ctx.createRadialGradient(
+                    oasisX + 100, oasis.y + 30, 15,
+                    oasisX + 100, oasis.y + 30, 100
+                );
+                waterGradient.addColorStop(0, '#87CEEB');
+                waterGradient.addColorStop(0.5, '#4FC3F7');
+                waterGradient.addColorStop(1, '#29B6F6');
+                ctx.fillStyle = waterGradient;
+                ctx.beginPath();
+                ctx.ellipse(oasisX + 100, oasis.y + 30, 100, 30, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 물결 (더 부드럽게)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 1.5;
+                for (let i = 0; i < 2; i++) {
+                    ctx.beginPath();
+                    const waveY = oasis.y + 20 + i * 12;
+                    for (let x = 0; x < 200; x += 5) {
+                        const wx = oasisX + x;
+                        const wy = waveY + Math.sin((x + Date.now() * 0.08) * 0.1) * 2;
+                        if (x === 0) ctx.moveTo(wx, wy);
+                        else ctx.lineTo(wx, wy);
+                    }
+                    ctx.stroke();
+                }
+
+                // 물 반짝임 (더 작게)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                for (let i = 0; i < 4; i++) {
+                    const sparkX = oasisX + 40 + Math.random() * 120;
+                    const sparkY = oasis.y + 15 + Math.random() * 25;
+                    const sparkSize = Math.max(1 + Math.sin(Date.now() * 0.008 + i) * 1.5, 0.5);
+                    ctx.beginPath();
+                    ctx.arc(sparkX, sparkY, sparkSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // 야자수 (오아시스 근처, 배경에)
+            palms.forEach(palm => {
+                const palmX = (palm.x - backgroundX * 0.4) % 2400;
+                if (palmX < -50 || palmX > 900) return;
+
+                // 줄기
+                const trunkGradient = ctx.createLinearGradient(palmX, palm.y, palmX + 20, palm.y);
+                trunkGradient.addColorStop(0, '#8B4513');
+                trunkGradient.addColorStop(0.5, '#A0522D');
+                trunkGradient.addColorStop(1, '#8B4513');
+                ctx.fillStyle = trunkGradient;
+
+                ctx.beginPath();
+                ctx.moveTo(palmX + 10, palm.y);
+                ctx.quadraticCurveTo(palmX + 15, palm.y + 40, palmX + 12, palm.y + 80);
+                ctx.lineTo(palmX + 8, palm.y + 80);
+                ctx.quadraticCurveTo(palmX + 5, palm.y + 40, palmX + 10, palm.y);
+                ctx.fill();
+
+                // 줄기 질감
+                ctx.strokeStyle = '#654321';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 6; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(palmX + 6, palm.y + i * 13);
+                    ctx.lineTo(palmX + 14, palm.y + i * 13);
+                    ctx.stroke();
+                }
+
+                // 야자수 잎 (더 많이, 더 풍성하게)
+                ctx.fillStyle = '#228B22';
+                ctx.strokeStyle = '#1B5E20';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 24; i++) {
+                    const leafAngle = (i / 24) * Math.PI * 2 + Date.now() * 0.0005;
+                    const leafSize = (i % 3 === 0) ? 1 : (i % 3 === 1) ? 0.9 : 0.8;
+                    ctx.save();
+                    ctx.translate(palmX + 10, palm.y);
+                    ctx.rotate(leafAngle);
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.quadraticCurveTo(10 * leafSize, -15 * leafSize, 15 * leafSize, -35 * leafSize);
+                    ctx.quadraticCurveTo(8 * leafSize, -30 * leafSize, 0, -40 * leafSize);
+                    ctx.quadraticCurveTo(-8 * leafSize, -30 * leafSize, -15 * leafSize, -35 * leafSize);
+                    ctx.quadraticCurveTo(-10 * leafSize, -15 * leafSize, 0, 0);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.restore();
+                }
+
+                // 코코넛
+                ctx.fillStyle = '#8B4513';
+                for (let i = 0; i < 3; i++) {
+                    const coconutAngle = (i / 3) * Math.PI * 2;
+                    const coconutX = palmX + 10 + Math.cos(coconutAngle) * 12;
+                    const coconutY = palm.y + 5 + Math.sin(coconutAngle) * 8;
+                    ctx.beginPath();
+                    ctx.ellipse(coconutX, coconutY, 6, 8, coconutAngle, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // 땅 (그라데이션)
+            const groundGradient = ctx.createLinearGradient(0, 500, 0, 650);
+            groundGradient.addColorStop(0, '#FFD93D');
+            groundGradient.addColorStop(0.5, '#FFB700');
+            groundGradient.addColorStop(1, '#FF9800');
+            ctx.fillStyle = groundGradient;
+            ctx.fillRect(0, 500, 900, 150);
+
+            // 땅 질감
+            ctx.fillStyle = 'rgba(255, 152, 0, 0.3)';
+            for (let i = 0; i < 100; i++) {
+                const gx = ((i * 50 + backgroundX * 0.3) % 900);
+                const gy = 500 + Math.random() * 150;
+                ctx.fillRect(gx, gy, 2, 2);
+            }
+
+            // 길 (더 입체적으로, 처음부터 끝까지 채워짐)
+            const roadGradient = ctx.createLinearGradient(0, 500, 0, 520);
+            roadGradient.addColorStop(0, '#D2B48C');
+            roadGradient.addColorStop(0.5, '#C19A6B');
+            roadGradient.addColorStop(1, '#A0826D');
+            ctx.fillStyle = roadGradient;
+
+            // 길을 여러 세그먼트로 그려서 끊김 없이
+            for (let segment = -1; segment <= 3; segment++) {
+                const offset = (backgroundX % 400) + segment * 400;
+                ctx.beginPath();
+                ctx.moveTo(0 - offset, 510);
+                ctx.quadraticCurveTo(450 - offset, 505, 900 - offset, 510);
+                ctx.lineTo(900 - offset, 530);
+                ctx.quadraticCurveTo(450 - offset, 525, 0 - offset, 530);
+                ctx.closePath();
+                ctx.fill();
+
+                // 길 테두리
+                ctx.strokeStyle = '#8B7355';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // 꽃들 (더 다양하게)
+            flowers.forEach(flower => {
+                const fx = (flower.x - backgroundX * 0.5) % 2400;
+                if (fx < -30 || fx > 900) return;
+
+                const sway = Math.sin(Date.now() * 0.002 + flower.x) * 2;
+
+                // 줄기
+                ctx.strokeStyle = '#4CAF50';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(fx, flower.y + 15);
+                ctx.quadraticCurveTo(fx + sway, flower.y + 5, fx, flower.y - 5);
+                ctx.stroke();
+
+                // 꽃잎
+                ctx.fillStyle = flower.petalColor;
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.lineWidth = 1;
+
+                if (flower.type === 0) {
+                    // 둥근 꽃
+                    for (let i = 0; i < 5; i++) {
+                        const angle = (i / 5) * Math.PI * 2;
+                        const px = fx + Math.cos(angle) * flower.size * 0.6;
+                        const py = flower.y + Math.sin(angle) * flower.size * 0.6;
+                        ctx.beginPath();
+                        ctx.arc(px, py, Math.max(flower.size * 0.4, 3), 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                } else if (flower.type === 1) {
+                    // 별 모양 꽃
+                    ctx.beginPath();
+                    for (let i = 0; i < 5; i++) {
+                        const outerAngle = (i / 5) * Math.PI * 2;
+                        const innerAngle = ((i + 0.5) / 5) * Math.PI * 2;
+                        const outerR = Math.max(flower.size * 0.7, 5);
+                        const innerR = Math.max(flower.size * 0.3, 2);
+
+                        if (i === 0) {
+                            ctx.moveTo(fx + Math.cos(outerAngle) * outerR, flower.y + Math.sin(outerAngle) * outerR);
+                        } else {
+                            ctx.lineTo(fx + Math.cos(outerAngle) * outerR, flower.y + Math.sin(outerAngle) * outerR);
+                        }
+                        ctx.lineTo(fx + Math.cos(innerAngle) * innerR, flower.y + Math.sin(innerAngle) * innerR);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                } else {
+                    // 하트 모양
+                    ctx.fillStyle = '#FF69B4';
+                    ctx.font = `${Math.max(flower.size, 10)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('♥', fx, flower.y);
+                }
+
+                // 꽃 중심
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(fx, flower.y, Math.max(flower.size * 0.25, 2), 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#FFA500';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            // 작은 병아리들 (더 귀엽게)
+            miniChicks.forEach((chick, index) => {
+                const cx = (chick.x - backgroundX * 0.6) % 2400;
+                if (cx < -20 || cx > 900) return;
+
+                const hop = Math.abs(Math.sin(Date.now() * 0.003 + chick.hopOffset)) * 5;
+                const cy = chick.y - hop;
+
+                // 그림자
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.beginPath();
+                ctx.ellipse(cx, chick.y + 8, Math.max(chick.size * 0.8, 1), Math.max(chick.size * 0.3, 1), 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 몸
+                ctx.fillStyle = '#FFEB3B';
+                ctx.beginPath();
+                ctx.arc(cx, cy, Math.max(chick.size, 5), 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = '#FBC02D';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // 눈
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(cx - chick.size * 0.3, cy - chick.size * 0.2, Math.max(chick.size * 0.15, 1), 0, Math.PI * 2);
+                ctx.arc(cx + chick.size * 0.3, cy - chick.size * 0.2, Math.max(chick.size * 0.15, 1), 0, Math.PI * 2);
+                ctx.fill();
+
+                // 부리
+                ctx.fillStyle = '#FF9800';
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + chick.size * 0.3, cy + chick.size * 0.2);
+                ctx.lineTo(cx, cy + chick.size * 0.25);
+                ctx.fill();
+
+                // 다리 (점프할 때만 보임)
+                if (hop < 2) {
+                    ctx.strokeStyle = '#FF9800';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(cx - chick.size * 0.2, cy + chick.size);
+                    ctx.lineTo(cx - chick.size * 0.3, cy + chick.size + 5);
+                    ctx.moveTo(cx + chick.size * 0.2, cy + chick.size);
+                    ctx.lineTo(cx + chick.size * 0.3, cy + chick.size + 5);
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // 밤 배경 (2단계)
+        function drawNightBackground() {
+            // 밤 하늘 그라데이션
+            const nightGradient = ctx.createLinearGradient(0, 0, 0, 400);
+            nightGradient.addColorStop(0, '#0D1B2A');
+            nightGradient.addColorStop(0.5, '#1B263B');
+            nightGradient.addColorStop(1, '#2C3E50');
+            ctx.fillStyle = nightGradient;
+            ctx.fillRect(0, 0, 900, 500);
+
+            // 달 (중앙 상단)
+            const moonX = 450;
+            const moonY = 120;
+
+            // 달빛 효과
+            for (let i = 0; i < 3; i++) {
+                const moonGlow = ctx.createRadialGradient(moonX, moonY, 40 + i * 20, moonX, moonY, 60 + i * 30);
+                moonGlow.addColorStop(0, `rgba(255, 255, 200, ${0.1 - i * 0.03})`);
+                moonGlow.addColorStop(1, 'rgba(255, 255, 200, 0)');
+                ctx.fillStyle = moonGlow;
+                ctx.beginPath();
+                ctx.arc(moonX, moonY, 60 + i * 30, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 달 본체
+            const moonGradient = ctx.createRadialGradient(moonX - 10, moonY - 10, 10, moonX, moonY, 50);
+            moonGradient.addColorStop(0, '#FFFACD');
+            moonGradient.addColorStop(0.7, '#F0E68C');
+            moonGradient.addColorStop(1, '#DAA520');
+            ctx.fillStyle = moonGradient;
+            ctx.beginPath();
+            ctx.arc(moonX, moonY, 50, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 달 크레이터
+            ctx.fillStyle = 'rgba(218, 165, 32, 0.3)';
+            ctx.beginPath();
+            ctx.arc(moonX - 15, moonY - 10, 12, 0, Math.PI * 2);
+            ctx.arc(moonX + 20, moonY + 5, 8, 0, Math.PI * 2);
+            ctx.arc(moonX - 5, moonY + 20, 10, 0, Math.PI * 2);
+            ctx.arc(moonX + 10, moonY - 20, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 별들 (반짝반짝)
+            ctx.fillStyle = '#FFF';
+            for (let i = 0; i < 80; i++) {
+                const starX = ((i * 97 + backgroundX * 0.1) % 900);
+                const starY = (i * 53) % 400;
+                const starSize = 1 + (i % 3);
+                const twinkle = Math.sin(Date.now() * 0.001 + i * 0.5) * 0.5 + 0.5;
+
+                ctx.globalAlpha = twinkle;
+                ctx.beginPath();
+                ctx.arc(starX, starY, starSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 별 빛나는 효과
+                if (starSize > 2 && twinkle > 0.7) {
+                    ctx.strokeStyle = '#FFF';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(starX - 4, starY);
+                    ctx.lineTo(starX + 4, starY);
+                    ctx.moveTo(starX, starY - 4);
+                    ctx.lineTo(starX, starY + 4);
+                    ctx.stroke();
+                }
+            }
+            ctx.globalAlpha = 1;
+
+            // 구름 (어두운 색)
+            clouds.forEach(cloud => {
+                const cx = (cloud.x - backgroundX * cloud.speed) % 2400;
+                if (cx < -100) return;
+
+                const cloudSize = Math.max(cloud.size, 30);
+
+                ctx.fillStyle = 'rgba(40, 50, 70, 0.6)';
+                ctx.beginPath();
+                ctx.arc(cx, cloud.y, cloudSize, 0, Math.PI * 2);
+                ctx.arc(cx + cloudSize * 0.8, cloud.y - cloudSize * 0.2, cloudSize * 0.8, 0, Math.PI * 2);
+                ctx.arc(cx + cloudSize * 0.5, cloud.y + cloudSize * 0.3, cloudSize * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 땅 (달 표면 느낌)
+            const groundGradient = ctx.createLinearGradient(0, 500, 0, 650);
+            groundGradient.addColorStop(0, '#4A5568');
+            groundGradient.addColorStop(0.5, '#2D3748');
+            groundGradient.addColorStop(1, '#1A202C');
+            ctx.fillStyle = groundGradient;
+            ctx.fillRect(0, 500, 900, 150);
+
+            // 크레이터들
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            for (let i = 0; i < 15; i++) {
+                const craterX = ((i * 120 + backgroundX * 0.4) % 900);
+                const craterY = 510 + (i % 3) * 40;
+                const craterSize = 15 + (i % 4) * 8;
+                ctx.beginPath();
+                ctx.arc(craterX, craterY, craterSize, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 돌멩이들
+            ctx.fillStyle = '#5A6C7D';
+            for (let i = 0; i < 20; i++) {
+                const rockX = ((i * 90 + backgroundX * 0.5) % 900);
+                const rockY = 540 + (i % 4) * 20;
+                const rockSize = 5 + (i % 3) * 5;
+                ctx.beginPath();
+                ctx.arc(rockX, rockY, rockSize, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#3A4C5D';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // 길 (어두운 색)
+            const roadGradient = ctx.createLinearGradient(0, 500, 0, 520);
+            roadGradient.addColorStop(0, '#4A5568');
+            roadGradient.addColorStop(0.5, '#2D3748');
+            roadGradient.addColorStop(1, '#1A202C');
+            ctx.fillStyle = roadGradient;
+
+            for (let segment = -1; segment <= 3; segment++) {
+                const offset = (backgroundX % 400) + segment * 400;
+                ctx.beginPath();
+                ctx.moveTo(0 - offset, 510);
+                ctx.quadraticCurveTo(450 - offset, 505, 900 - offset, 510);
+                ctx.lineTo(900 - offset, 530);
+                ctx.quadraticCurveTo(450 - offset, 525, 0 - offset, 530);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.strokeStyle = '#1A202C';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // 작은 병아리들 (야광 효과)
+            miniChicks.forEach((chick, index) => {
+                const cx = (chick.x - backgroundX * 0.6) % 2400;
+                if (cx < -20 || cx > 900) return;
+
+                const hop = Math.abs(Math.sin(Date.now() * 0.003 + chick.hopOffset)) * 5;
+                const cy = chick.y - hop;
+
+                // 야광 효과
+                ctx.fillStyle = 'rgba(255, 255, 150, 0.3)';
+                ctx.beginPath();
+                ctx.arc(cx, cy, Math.max(chick.size, 5) + 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 몸
+                ctx.fillStyle = '#FFEB3B';
+                ctx.beginPath();
+                ctx.arc(cx, cy, Math.max(chick.size, 5), 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = '#FBC02D';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // 눈
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(cx - chick.size * 0.3, cy - chick.size * 0.2, Math.max(chick.size * 0.15, 1), 0, Math.PI * 2);
+                ctx.arc(cx + chick.size * 0.3, cy - chick.size * 0.2, Math.max(chick.size * 0.15, 1), 0, Math.PI * 2);
+                ctx.fill();
+
+                // 부리
+                ctx.fillStyle = '#FF9800';
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + chick.size * 0.3, cy + chick.size * 0.2);
+                ctx.lineTo(cx, cy + chick.size * 0.25);
+                ctx.fill();
+            });
+        }
+
+        // 충돌 감지
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.width > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.height > rect2.y;
+        }
+
+        // 게임 업데이트
+        function update() {
+            if (gameState !== 'playing') return;
+
+            // 배경 스크롤
+            backgroundX += scrollSpeed;
+
+            // 플레이어 중력
+            player.velocityY += player.gravity;
+            player.y += player.velocityY;
+
+            if (player.y >= player.groundY) {
+                player.y = player.groundY;
+                player.velocityY = 0;
+                player.jumping = false;
+            }
+
+            // 달걀 이동
+            eggs.forEach((egg, index) => {
+                egg.x += egg.speed;
+                if (egg.x > 900) {
+                    eggs.splice(index, 1);
+                }
+            });
+
+            // 적 생성 및 이동
+            if (!bossSpawned) {
+                spawnTimer++;
+                // 2단계는 더 자주 생성
+                const spawnInterval = gameStage === 1 ? 50 : 40;
+                if (spawnTimer > spawnInterval) {
+                    spawnEnemy();
+                    spawnTimer = 0;
+                }
+            }
+
+            enemies.forEach((enemy, index) => {
+                enemy.x -= enemy.speed;
+                enemy.bounceOffset += enemy.bounceSpeed;
+
+                if (enemy.x + enemy.width < 0) {
+                    enemies.splice(index, 1);
+                    score += 10;
+                }
+
+                if (checkCollision(player, enemy)) {
+                    if (player.invincible === 0) {
+                        player.hp--;
+                        player.invincible = 60;
+                        document.getElementById('playerHp').textContent = player.hp;
+
+                        if (player.hp <= 0) {
+                            gameState = 'gameOver';
+                            saveHighScore(score);
+                            document.getElementById('gameOverScore').textContent = score;
+                            displayRankings('rankList');
+                            document.getElementById('gameOver').style.display = 'block';
+                        }
+                    }
+                    enemies.splice(index, 1);
+                }
+
+                eggs.forEach((egg, eggIndex) => {
+                    if (checkCollision(egg, enemy)) {
+                        enemies.splice(index, 1);
+                        eggs.splice(eggIndex, 1);
+                        score += 50;
+                    }
+                });
+            });
+
+            // 보스 등장 (각 단계마다 500점)
+            const stageScore = gameStage === 1 ? score : score - 500;
+            if (stageScore >= 500 && !bossSpawned) {
+                spawnBoss();
+                bossSpawned = true;
+                enemies.length = 0;
+            }
+
+            // 보스 업데이트
+            if (boss) {
+                if (boss.x > 650) {
+                    boss.x -= boss.speed;
+                } else {
+                    boss.moveTimer++;
+                    boss.rotation += 0.01;
+                    boss.attackTimer++;
+
+                    // 번개 공격 (2단계는 더 자주)
+                    const attackInterval = gameStage === 1 ? 90 : 60;
+                    if (boss.attackTimer > attackInterval) {
+                        spawnLightning();
+                        boss.attackTimer = 0;
+                    }
+
+                    if (boss.moveTimer > 80) {
+                        boss.moveDirection *= -1;
+                        boss.moveTimer = 0;
+                    }
+                    boss.y += boss.moveDirection * 1.5;
+
+                    if (boss.y < 180) boss.y = 180;
+                    if (boss.y > 380) boss.y = 380;
+                }
+
+                if (checkCollision(player, boss)) {
+                    if (player.invincible === 0) {
+                        player.hp--;
+                        player.invincible = 60;
+                        document.getElementById('playerHp').textContent = player.hp;
+
+                        if (player.hp <= 0) {
+                            gameState = 'gameOver';
+                            saveHighScore(score);
+                            document.getElementById('gameOverScore').textContent = score;
+                            displayRankings('rankList');
+                            document.getElementById('gameOver').style.display = 'block';
+                        }
+                    }
+                }
+
+                eggs.forEach((egg, eggIndex) => {
+                    if (checkCollision(egg, boss)) {
+                        boss.hp--;
+                        boss.hitTimer = 15;
+                        eggs.splice(eggIndex, 1);
+                        score += 100;
+                        document.getElementById('bossHp').textContent = boss.hp;
+
+                        if (boss.hp <= 0) {
+                            if (gameStage === 1) {
+                                // 1단계 클리어 - 2단계로 전환
+                                const stage1Score = score; // 1단계 점수 저장
+                                gameState = 'transition';
+                                gameStage = 2;
+                                bossSpawned = false;
+                                boss = null;
+                                enemies.length = 0;
+                                lightnings.length = 0;
+                                eggs.length = 0;
+                                score = 500; // 점수를 500으로 설정 (2단계 시작)
+                                scrollSpeed = 5; // 속도 증가
+                                spawnTimer = 0;
+                                player.hp = player.maxHp; // 체력 회복
+                                document.getElementById('playerHp').textContent = player.hp;
+                                document.getElementById('bossHealth').style.display = 'none';
+
+                                // 2단계 전환 화면 표시
+                                showStage2Transition(stage1Score);
+                            } else {
+                                // 2단계 클리어 - 최종 승리
+                                gameState = 'victory';
+                                saveHighScore(score);
+                                document.getElementById('victory').style.display = 'block';
+                                document.getElementById('finalScore').textContent = score;
+                                displayRankings('victoryRankList');
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 번개 업데이트
+            lightnings.forEach((lightning, index) => {
+                lightning.x -= lightning.speed;
+
+                // 번개가 주인공 위치로 조금씩 이동 (유도탄 효과)
+                const dy = lightning.targetY - lightning.y;
+                lightning.y += dy * 0.03; // 천천히 추적
+
+                if (lightning.x < -50) {
+                    lightnings.splice(index, 1);
+                }
+
+                // 더 정확한 충돌 판정 (번개의 실제 크기에 맞춤)
+                const lightningHitbox = {
+                    x: lightning.x - 10,
+                    y: lightning.y - 18,
+                    width: lightning.width,
+                    height: lightning.height
+                };
+
+                if (checkCollision(player, lightningHitbox)) {
+                    if (player.invincible === 0) {
+                        player.hp--;
+                        player.invincible = 60;
+                        document.getElementById('playerHp').textContent = player.hp;
+
+                        if (player.hp <= 0) {
+                            gameState = 'gameOver';
+                            saveHighScore(score);
+                            document.getElementById('gameOverScore').textContent = score;
+                            displayRankings('rankList');
+                            document.getElementById('gameOver').style.display = 'block';
+                        }
+                    }
+                    lightnings.splice(index, 1);
+                }
+            });
+
+            // 무적 타이머 감소
+            if (player.invincible > 0) {
+                player.invincible--;
+            }
+
+            // 점수 업데이트
+            document.getElementById('score').textContent = score;
+            document.getElementById('stageDisplay').textContent = gameStage;
+        }
+
+        // 게임 루프
+        function gameLoop() {
+            ctx.clearRect(0, 0, 900, 650);
+
+            drawBackground();
+
+            if (gameState === 'playing') {
+                drawPlayer();
+
+                enemies.forEach(enemy => drawEnemy(enemy));
+                eggs.forEach(egg => drawEgg(egg));
+                lightnings.forEach(lightning => drawLightning(lightning));
+
+                if (boss) {
+                    drawBoss(boss);
+                }
+            }
+
+            update();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 게임 시작
+        loadHighScores();
+        drawStartScreen();
+        gameLoop();
+    </script>
+</body>
+
+</html>
